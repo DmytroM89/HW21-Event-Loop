@@ -5,6 +5,24 @@ class Posts {
         this.postTitleNode = document.querySelector('.post__title');
         this.postBodyNode = document.querySelector('.post__body');
         this.postCommentsNode = document.querySelector('.post__comments');
+        this.postCommentField = document.querySelector('#postComment');
+        this.addCommentBtn = document.querySelector('#addComment');
+
+        this.addCommentBtn.addEventListener('click', (event) => {
+            const postId = event.target.dataset.postId;
+            this.addCommentToPost(postId, this.postCommentField.value)
+                .then(result => {
+                    const newComment = document.createElement('div');
+                    newComment.classList.add('comment-item');
+                    newComment.innerText = result.body;
+                    this.postCommentsNode.append(newComment);
+
+                    this.postCommentField.value = '';
+                })
+                .catch((err) => {
+                    console.warn(err);
+                })
+        })
     }
 
     async getPosts() {
@@ -17,8 +35,26 @@ class Posts {
         }
     }
 
-    async getPostComments(postId) {
-        const response = await fetch(this.url + `/${postId}/comments`);
+    async getPostComments(postData) {
+        const response = await fetch(this.url + `/${postData.id}/comments`);
+
+        if (response.ok) {
+            postData.comments = await response.json();
+
+            return postData;
+        } else {
+            console.warn('Error comments: ' + response.status);
+        }
+    }
+
+    async addCommentToPost(postId, commentText) {
+        const response = await fetch(this.url + `/${postId}/comments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({body: commentText})
+        });
 
         if (response.ok) {
             return response.json();
@@ -27,45 +63,35 @@ class Posts {
         }
     }
 
-    async render() {
-        try {
-            const posts = await this.getPosts();
-            const postComments = await this.getPostComments(posts[0].id);
 
-            this.postTitleNode.innerHTML = posts[0].title;
-            this.postBodyNode.innerHTML = posts[0].body;
+    async render(postData) {
+        try {
+            this.postTitleNode.innerHTML = postData.title;
+            this.postBodyNode.innerHTML = postData.description;
+            this.addCommentBtn.dataset.postId = postData.id;
 
             let commentItems = '<h3>Comments</h3>';
 
-            for (const comment of postComments) {
-                commentItems += `<div class="comment-item">${comment.name}</div>`
+            for (const comment of postData.comments) {
+                commentItems += `<div class="comment-item">${comment.body}</div>`
             }
 
             this.postCommentsNode.innerHTML = commentItems;
-
         } catch (err) {
             console.warn('Error render: ' + err);
         }
     }
 }
 
-class Comments {
-    constructor(url) {
-        this.url = url;
-        this.addCommentBtn = document.querySelector('#addComment');
-        this.commentField = document.querySelector('#postComment');
+const posts = new Posts('http://localhost:3000/posts');
 
-        this.addCommentBtn.addEventListener('click', (e) => {
-            console.log(e.target);
-        });
-    }
-
-}
-
-const posts = new Posts('https://jsonplaceholder.typicode.com/posts');
-const comments = new Comments('https://jsonplaceholder.typicode.com/comments');
-
-posts.render();
+posts.getPosts()
+    .then(allPosts => allPosts[0])
+    .then(firstPost => posts.getPostComments(firstPost))
+    .then(postData => posts.render(postData))
+    .catch((err) => {
+        console.warn(err);
+    })
 
 
 // ------------- # 3
