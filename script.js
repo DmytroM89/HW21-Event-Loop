@@ -67,7 +67,8 @@ class Posts {
     async render(postData) {
         try {
             this.postTitleNode.innerHTML = postData.title;
-            this.postBodyNode.innerHTML = postData.description;
+
+            this.postBodyNode.innerHTML = postData.description ? postData.description : postData.body;
             this.addCommentBtn.dataset.postId = postData.id;
 
             let commentItems = '<h3>Comments</h3>';
@@ -83,7 +84,8 @@ class Posts {
     }
 }
 
-const posts = new Posts('http://localhost:3000/posts');
+//const posts = new Posts('http://localhost:3000/posts');
+const posts = new Posts('https://jsonplaceholder.typicode.com/posts');
 
 posts.getPosts()
     .then(allPosts => allPosts[0])
