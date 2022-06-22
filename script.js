@@ -11,14 +11,7 @@ class Posts {
         this.addCommentBtn.addEventListener('click', (event) => {
             const postId = event.target.dataset.postId;
             this.addCommentToPost(postId, this.postCommentField.value)
-                .then(result => {
-                    const newComment = document.createElement('div');
-                    newComment.classList.add('comment-item');
-                    newComment.innerText = result.body;
-                    this.postCommentsNode.append(newComment);
-
-                    this.postCommentField.value = '';
-                })
+                .then(result => this.addPostCommentToDOM(result))
                 .catch((err) => {
                     console.warn(err);
                 })
@@ -63,6 +56,15 @@ class Posts {
         }
     }
 
+    addPostCommentToDOM(comment) {
+        const newComment = document.createElement('div');
+        newComment.classList.add('comment-item');
+        newComment.innerText = comment.body;
+        this.postCommentsNode.append(newComment);
+
+        this.postCommentField.value = '';
+    }
+
 
     async render(postData) {
         try {
@@ -82,18 +84,22 @@ class Posts {
             console.warn('Error render: ' + err);
         }
     }
+
+    async run() {
+        try {
+            const allPosts = await this.getPosts();
+            let firstPost = await this.getPostComments(allPosts[0]);
+            await this.render(firstPost);
+        } catch (err) {
+            console.warn('Error render: ' + err);
+        }
+    }
 }
 
-//const posts = new Posts('http://localhost:3000/posts');
-const posts = new Posts('https://jsonplaceholder.typicode.com/posts');
+const posts = new Posts('http://localhost:3000/posts');
+//const posts = new Posts('https://jsonplaceholder.typicode.com/posts');
 
-posts.getPosts()
-    .then(allPosts => allPosts[0])
-    .then(firstPost => posts.getPostComments(firstPost))
-    .then(postData => posts.render(postData))
-    .catch((err) => {
-        console.warn(err);
-    })
+posts.run();
 
 
 // ------------- # 3
